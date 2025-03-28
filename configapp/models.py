@@ -1,13 +1,11 @@
-
 from django.db import models
 from django.utils.text import slugify
+from datetime import date
 
-
-from datetime import date  # Import qilish kerak
 
 class Actors(models.Model):
     name = models.CharField(max_length=50)
-    birth_date = models.DateField(default=date.today)  # Standart qiymat qo‘shildi
+    birth_date = models.DateField(default=date.today)
 
 class Movie(models.Model):
     title = models.CharField(max_length=150)
