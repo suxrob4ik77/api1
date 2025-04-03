@@ -2,34 +2,29 @@
 from rest_framework import serializers
 from .models import Movie, Actors
 
-class ActorSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Actors
-        fields = '__all__'
 
-class MovieSerializer(serializers.ModelSerializer):
-    actors = ActorSerializer(many=True, read_only=True)
-    actors_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Actors.objects.all(), many=True, write_only=True
-    )  # Yangi aktyorlar qo‘shish uchun
+class MovieSerializers (serializers.Serializer):
+        id = serializers.IntegerField(read_only=True)
+        title = serializers.CharField(max_length=200)
+        slug = serializers.SlugField(read_only=True)
+        year = serializers.IntegerField()
+        actors = serializers.PrimaryKeyRelatedField(many=True, queryset=Actors.objects.all())
+        genre = serializers.CharField()
 
-    class Meta:
-        model = Movie
-        fields = '__all__'
+        def create(self, validated_data):
+            actors_data = validated_data.pop('actors')
+            movie = Movie.objects.create(**validated_data)
+            movie.actors.set(actors_data)
+            return movie
 
-    def create(self, validated_data):
-        actors_data = validated_data.pop('actors_ids', [])
-        # Yangi aktyorlar ro‘yxatini olish
-        movie = Movie.objects.create(**validated_data)
-        movie.actors.set(actors_data)
-        return movie
+        def update(self, instance, validated_data):
+            instance.title = validated_data.get('title', instance.title)
+            instance.year = validated_data.get('year', instance.year)
+            instance.genre = validated_data.get('genre', instance.genre)
 
-    def update(self, instance, validated_data):
-        actors_data = validated_data.pop('actors_ids', None)
-        # Yangilashda aktyorlar bolsa olish
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-        if actors_data is not None:
-            instance.actors.set(actors_data)
-        instance.save()
-        return instance
+            if 'actors' in validated_data:
+                actors_data = validated_data.pop('actors')
+                instance.actors.set(actors_data)
+
+            instance.save()
+            return instance
